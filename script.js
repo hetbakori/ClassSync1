@@ -1,6 +1,6 @@
 ﻿// --- LIVE GOOGLE SHEETS DATABASE ---
 // !!! IMPORTANT: PASTE YOUR COPIED GOOGLE SHEET CSV LINK BELOW !!!
-const sheetCSVUrl = https://docs.google.com/spreadsheets/d/e/2PACX-1vQRgBqCSSXL2_j8P0cfhoXVImQfQF1c0sXdaxrZDI9wAIHsC-jpy4U4dyfw_Yq-p7t7gDqTMwtDBeYh/pub?output=csv";
+const sheetCSVUrl = https://docs.google.com/spreadsheets/d/e/2PACX-1vQRgBqCSSXL2_j8P0cfhoXVImQfQF1c0sXdaxrZDI9wAIHsC-jpy4U4dyfw_Yq-p7t7gDqTMwtDBeYh/pub?output=csv&t";
 
 let studentDatabase = [];
 
