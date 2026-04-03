@@ -1,6 +1,6 @@
 ﻿// --- LIVE GOOGLE SHEETS DATABASE ---
 // !!! IMPORTANT: PASTE YOUR COPIED GOOGLE SHEET CSV LINK BELOW !!!
-const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSNBrjQdkbaqMTbzEriSt3fvDYNpn9U9t61lFoVxNUk6RiMA2hiKRNNyJ5cAN8G2E04Wx3_lywdQWD4/pub?gid=872371526&single=true&output=csv";
+const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/1VL7ndBfnXogATnRcyEqp6uCDScdStmUzN9WZSZffeIc/edit?usp=drivesdk";
 
 let studentDatabase = [];
 
