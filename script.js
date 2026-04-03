@@ -1,10 +1,15 @@
-// --- LIVE GOOGLE SHEETS DATABASE ---
-// Added the missing quote and the dynamic timestamp to force-refresh data
+/**
+ * CLASSSYNC - FULL SYSTEM LOGIC
+ * Developer: Het Bakori | Brand: Graphic Paradise
+ */
+
+// --- 1. LIVE GOOGLE SHEETS DATABASE ---
+// Added dynamic timestamp (?t=) to bypass phone browser caching
 const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQRgBqCSSXL2_j8P0cfhoXVImQfQF1c0sXdaxrZDI9wAIHsC-jpy4U4dyfw_Yq-p7t7gDqTMwtDBeYh/pub?output=csv&t=" + new Date().getTime();
 
 let studentDatabase = [];
 
-// Dictionary: Maps short Google Sheet column codes to full display names
+// Dictionary: Maps your Sheet Column Prefixes to Full Names on the UI
 const subjectDictionary = {
   "MDM": "MDM",
   "DAA": "DAA",
@@ -14,7 +19,6 @@ const subjectDictionary = {
 };
 
 function fetchStudentData() {
-  // We use Papa.parse to convert the CSV into a readable JSON object
   Papa.parse(sheetCSVUrl, {
     download: true,       
     header: true,         
@@ -22,12 +26,11 @@ function fetchStudentData() {
     skipEmptyLines: true,
     complete: function(results) {
       studentDatabase = results.data
-        .filter(row => row.Roll) // Only process rows that have a Roll Number
+        .filter(row => row.Roll) // Skips empty rows
         .map(row => {
-          // Initialize student object
           const student = { 
             roll: row.Roll, 
-            name: row.Name, 
+            name: String(row.Name || "").trim(), 
             batch: row.Batch, 
             dept: row.Dept, 
             attendance: 0, 
@@ -38,52 +41,62 @@ function fetchStudentData() {
           let totalAttendedOverall = 0; 
           let totalConductedOverall = 0;
 
-          // Loop through every column in the row (e.g., DAA_CAT1, DAA_ATT)
+          // Loop through every column header in the Sheet
           Object.keys(row).forEach(key => {
-            if (!['Roll', 'Name', 'Batch', 'Dept'].includes(key)) {
-              const parts = key.split('_'); // Splits "DAA_ATT" into ["DAA", "ATT"]
+            const cleanKey = key.trim().toUpperCase(); // Remove spaces, make uppercase
+            
+            if (!['ROLL', 'NAME', 'BATCH', 'DEPT'].includes(cleanKey)) {
+              const parts = cleanKey.split('_'); 
               
               if (parts.length >= 2) {
-                const shortCode = parts[0].toUpperCase(); 
-                const examType = parts[1].toLowerCase(); 
+                const shortCode = parts[0]; 
+                const type = parts[1]; 
                 const fullName = subjectDictionary[shortCode] || shortCode; 
 
                 if (!dynamicSubjects[shortCode]) {
                   dynamicSubjects[shortCode] = { subject: fullName, cat1: 0, mid: 0, cat2: 0, att: 0, tot: 0 };
                 }
                 
-                const cellValue = row[key] || 0;
-                dynamicSubjects[shortCode][examType] = cellValue;
+                const val = Number(row[key]) || 0;
 
-                // Logic: Sum up all attendance columns to get the percentage
-                if (examType === 'att') totalAttendedOverall += Number(cellValue);
-                if (examType === 'tot') totalConductedOverall += Number(cellValue);
+                // Map Sheet Columns to Data Object
+                if (type === 'ATT') {
+                    dynamicSubjects[shortCode].att = val;
+                    totalAttendedOverall += val;
+                } else if (type === 'TOT') {
+                    dynamicSubjects[shortCode].tot = val;
+                    totalConductedOverall += val;
+                } else if (type === 'CAT1') {
+                    dynamicSubjects[shortCode].cat1 = val;
+                } else if (type === 'MID') {
+                    dynamicSubjects[shortCode].mid = val;
+                } else if (type === 'CAT2') {
+                    dynamicSubjects[shortCode].cat2 = val;
+                }
               }
             }
           });
 
-          // Calculate Overall Attendance Percentage
-          if (totalConductedOverall > 0) {
-              student.attendance = Math.round((totalAttendedOverall / totalConductedOverall) * 100);
-          } else {
-              student.attendance = 0;
-          }
+          // Final Aggregate Calculation
+          student.attendance = totalConductedOverall > 0 
+            ? Math.round((totalAttendedOverall / totalConductedOverall) * 100) 
+            : 0;
           
           student.results = Object.values(dynamicSubjects);
           return student;
       });
-      console.log("Graphic Paradise Database Loaded!", studentDatabase);
+      console.log("✅ Graphic Paradise Database Synced!", studentDatabase);
     },
     error: function(err) { 
-      console.error("Failed to load Google Sheet. Check if Published to Web is active.", err); 
+      console.error("❌ CSV Load Error:", err); 
     }
   });
 }
 
-// Trigger download
+// Initial Run
 fetchStudentData();
 
-// --- MASTER DEPARTMENT TIMETABLE ---
+// --- 2. MASTER DEPARTMENT TIMETABLE ---
 const campusTimetables = {
   "CSE": {
     "Monday": [
@@ -143,7 +156,7 @@ const campusTimetables = {
   }
 };
 
-// --- AUTHENTICATION ---
+// --- 3. AUTHENTICATION ---
 function authenticateUser(roll, name) {
   if(!studentDatabase.length) return null;
   return studentDatabase.find(s => 
@@ -152,7 +165,7 @@ function authenticateUser(roll, name) {
   );
 }
 
-// --- LECTURE TRACKER ---
+// --- 4. LECTURE TRACKER ---
 function getLectureStatuses(daySchedule) {
   if (!daySchedule || daySchedule.length === 0) return { current: null, next: null };
   const now = new Date();
@@ -168,7 +181,6 @@ function getLectureStatuses(daySchedule) {
     let startHour = startParts[0]; 
     let endHour = endParts[0];
     
-    // Simple PM adjustment for 12-hour school clocks
     if (startHour < 8) startHour += 12; 
     if (endHour < 8) endHour += 12;
 
@@ -186,7 +198,7 @@ function getLectureStatuses(daySchedule) {
   return { current, next };
 }
 
-// Export to Window for use in other HTML files
+// Export functions to Window scope
 window.studentDatabase = studentDatabase; 
 window.authenticateUser = authenticateUser; 
 window.campusTimetables = campusTimetables; 
