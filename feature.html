@@ -1,0 +1,136 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#050914">
+  <link rel="apple-touch-icon" href="logo.png">  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="icon" type="image/png" href="title.png">
+  <title>ClassSync - Login</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+  <div class="feature-shell centered-shell">
+    <div class="glass-card login-card animated-entrance">
+      
+      <div class="login-header">
+        <i class="ph ph-fingerprint pulse-icon"></i>
+        <h1>Access Portal</h1>
+        <p>Enter your credentials to continue</p>
+      </div>
+
+      <div class="form-body">
+        
+        <div style="display: flex; gap: 1rem; margin-bottom: 1.2rem;">
+          <div class="input-group" style="flex: 1; margin-bottom: 0;">
+            <label>First Name</label>
+            <div class="input-wrapper">
+              <input id="firstNameInput" type="text" class="custom-input modern-input">
+            </div>
+          </div>
+          
+          <div class="input-group" style="flex: 1; margin-bottom: 0;">
+            <label>Last Name</label>
+            <div class="input-wrapper">
+              <input id="lastNameInput" type="text" class="custom-input modern-input">
+            </div>
+          </div>
+        </div>
+        
+        <div class="input-group">
+          <label>Password</label>
+          <div class="input-wrapper">
+            <i class="ph ph-hash"></i>
+            <input id="rollInput" type="number"class="custom-input modern-input">
+          </div>
+        </div>
+        
+        <div id="passwordArea" class="input-group" style="display: none;">
+          <label>Password</label>
+          <div class="input-wrapper">
+            <i class="ph ph-lock-key"></i>
+            <input id="passInput" type="password" placeholder="••••••••" class="custom-input modern-input">
+          </div>
+        </div>
+      </div>
+
+      <button id="loginBtn" class="primary-btn glow-on-hover" style="width: 100%;">Enter Workspace <i class="ph ph-arrow-right"></i></button>
+      <p id="errorText" class="error-text"></p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    const rollInp = document.getElementById('rollInput');
+    const passArea = document.getElementById('passwordArea');
+    
+    rollInp.addEventListener('input', () => {
+        if (rollInp.value === "0") {
+            passArea.style.display = "block";
+            setTimeout(() => passArea.classList.add('show-anim'), 10);
+        } else {
+            passArea.classList.remove('show-anim');
+            setTimeout(() => passArea.style.display = "none", 300);
+        }
+    });
+
+    // NEW: Trigger login button on "Enter" key press
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault(); // Prevent default form submission behavior
+            document.getElementById('loginBtn').click();
+        }
+    });
+
+    document.getElementById('loginBtn').addEventListener('click', function() {
+        const btn = this;
+        const originalText = btn.innerHTML;
+        const errorText = document.getElementById('errorText');
+        
+        btn.innerHTML = '<i class="ph ph-spinner-gap spinner"></i> Authenticating...';
+        btn.style.pointerEvents = 'none'; 
+        
+        setTimeout(() => {
+            // NEW: Grab both inputs and combine them with a space
+            const firstName = document.getElementById('firstNameInput').value.trim();
+            const lastName = document.getElementById('lastNameInput').value.trim();
+            const name = firstName + " " + lastName; 
+            
+            const roll = Number(rollInp.value);
+            const pass = document.getElementById('passInput').value;
+            
+            // Safety check for database loading
+            if (!studentDatabase || studentDatabase.length === 0) {
+                errorText.textContent = "Database is loading. Please wait 2 seconds and try again.";
+                btn.innerHTML = originalText;
+                btn.style.pointerEvents = 'auto';
+                return;
+            }
+
+            const user = authenticateUser(roll, name, pass);
+            
+            if (user) {
+                localStorage.setItem('classsyncUser', JSON.stringify(user));
+                window.location.href = 'dashboard.html';
+            } else {
+                errorText.textContent = "Authentication Failed. Verify your credentials.";
+                btn.innerHTML = originalText;
+                btn.style.pointerEvents = 'auto';
+                
+                const card = document.querySelector('.login-card');
+                card.classList.remove('animated-entrance');
+                card.classList.add('shake');
+                setTimeout(() => card.classList.remove('shake'), 500);
+            }
+        }, 800);
+    });
+  </script>
+  <footer class="app-footer fade-in" style="animation-delay: 0.5s;">
+       <p>Designed by <span class="developer-name">Het Bakori</span></p>
+      <p class="footer-dept">Department of Computer Science & Engineering</p>
+  </footer>
+</body>
+</html>

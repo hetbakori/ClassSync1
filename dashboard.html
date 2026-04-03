@@ -1,0 +1,263 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#050914">
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="logo.png">
+  <link rel="icon" type="image/png" href="title.png">
+  
+  <title>ClassSync - Dashboard</title>
+  
+  <link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+
+  <div class="splash-screen" id="dashboardSplash">
+    <div class="splash-content">
+      <img src="logo.png" alt="ClassSync Logo" class="splash-logo-img">
+    </div>
+  </div>
+
+  <div class="dashboard-shell">
+    <header class="glass-card dashboard-header">
+      <div>
+        <h1 id="userGreet">Welcome</h1>
+        <p id="userSub" style="font-size: 0.8rem; opacity: 0.7;"></p>
+      </div>
+      <button onclick="localStorage.removeItem('classsyncUser'); location.href='index.html';" class="secondary-btn" style="width:auto; margin:0;">Logout</button>
+    </header>
+    
+    <nav class="nav-tabs">
+      <button class="tab-btn active" data-tab="tab-today"><i class="ph ph-clock"></i> Today</button>
+      <button class="tab-btn" data-tab="tab-weekly"><i class="ph ph-calendar"></i> Weekly</button>
+      <button class="tab-btn" data-tab="tab-results"><i class="ph ph-chart-line"></i> Results</button>
+      <button class="tab-btn" data-tab="tab-attendance"><i class="ph ph-check-circle"></i> Attendance</button>
+      <button class="tab-btn" data-tab="tab-profile"><i class="ph ph-user"></i> Profile</button>
+    </nav>
+
+    <main class="dashboard-content">
+      <div id="tab-today" class="tab-pane active glass-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+           <h2 style="border:none; margin:0;">Today's Lectures</h2>
+           <span id="displayDay" style="color:var(--accent-1); font-weight:600;"></span>
+        </div>
+        <div id="todayTimeline" class="timeline"></div>
+      </div>
+
+      <div id="tab-weekly" class="tab-pane glass-card">
+        <h2>Weekly Timetable <span id="deptLabel" style="font-size:0.9rem; color:var(--accent-1); opacity:0.8;"></span></h2>
+        <div id="weeklyContainer"></div>
+      </div>
+
+      <div id="tab-results" class="tab-pane glass-card">
+        <h2>Academic Results</h2>
+        <div id="resultsGrid" class="results-grid"></div>
+      </div>
+
+      <div id="tab-attendance" class="tab-pane glass-card">
+        <h2>Attendance Status</h2>
+        <div style="text-align: center; padding: 1.5rem 0 1rem; border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <h3 id="attValue" style="font-size: 4.5rem; line-height: 1; color: var(--accent-1); margin:0;">0%</h3>
+          <p style="text-transform: uppercase; letter-spacing: 1px; font-size: 0.8rem; opacity: 0.7; margin-top: 0.5rem;">Overall Aggregate</p>
+          <div class="progress-wrap" style="height: 10px; margin-top: 1.5rem;"><div id="attBar" class="progress-fill" style="width: 0%"></div></div>
+        </div>
+        <h3 style="margin-top: 1.5rem; font-size: 1.05rem; opacity: 0.9;">Subject Breakdown</h3>
+        <div id="subjectAttGrid" style="display: flex; flex-direction: column; gap: 0.8rem; margin-top: 1rem;">
+            </div>
+      </div>
+
+      <div id="tab-profile" class="tab-pane glass-card">
+        <h2>Student Profile</h2>
+        <div class="profile-card">
+          <div class="profile-avatar"><i class="ph ph-user-circle"></i></div>
+          <div class="profile-details" id="profileDetails"></div>
+        </div>
+      </div>
+    </main>
+    <footer class="app-footer fade-in" style="animation-delay: 0.5s;">
+       <p>Designed by <span class="developer-name">Het Bakori</span></p>
+      <p class="footer-dept">Department of Computer Science & Engineering</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+  <script>
+    const session = JSON.parse(localStorage.getItem('classsyncUser'));
+    if (!session) location.href = 'index.html'; 
+
+    const checkDbInterval = setInterval(() => {
+        if (studentDatabase && studentDatabase.length > 0) {
+            clearInterval(checkDbInterval); 
+            
+            const user = studentDatabase.find(u => u.roll === parseInt(session.roll));
+
+            if (user) {
+              const userTimetable = campusTimetables[user.dept] || {};
+
+              document.getElementById('userGreet').textContent = `Hello, ${user.name}`;
+              document.getElementById('userSub').textContent = `Roll: ${user.roll} | Batch: ${user.batch}`;
+              document.getElementById('deptLabel').textContent = `(${user.dept})`;
+              
+              const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+              const now = new Date();
+              const todayName = dayNames[now.getDay()];
+              document.getElementById('displayDay').textContent = todayName;
+
+              document.getElementById('profileDetails').innerHTML = `
+                <div class="info-row"><span>Full Name:</span> <span>${user.name}</span></div>
+                <div class="info-row"><span>Roll Number:</span> <span>${user.roll}</span></div>
+                <div class="info-row"><span>Batch:</span> <span>${user.batch}</span></div>
+                <div class="info-row"><span>Department:</span> <span>${user.dept}</span></div>
+              `;
+
+              document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.onclick = () => {
+                  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                  document.querySelectorAll('.tab-pane').forEach(p => {
+                      p.classList.remove('active');
+                      void p.offsetWidth; 
+                  });
+                  btn.classList.add('active');
+                  document.getElementById(btn.dataset.tab).classList.add('active');
+                };
+              });
+
+              // UPGRADED ATTENDANCE MATH RENDERER
+              document.getElementById('attValue').textContent = user.attendance + "%";
+              document.getElementById('attBar').style.width = user.attendance + "%";
+
+              const subGrid = document.getElementById('subjectAttGrid');
+              subGrid.innerHTML = user.results.map(res => {
+                  let subPercent = res.tot > 0 ? Math.round((res.att / res.tot) * 100) : 0;
+                  let colorClass = subPercent >= 75 ? 'var(--success)' : '#ef4444';
+                  
+                  return `
+                  <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03);">
+                      <div>
+                          <div style="font-weight: 600; font-size: 0.95rem;">${res.subject}</div>
+                          <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 0.2rem;">${res.att} / ${res.tot} Lectures Attended</div>
+                      </div>
+                      <div style="font-size: 1.2rem; font-weight: 700; color: ${colorClass};">
+                          ${subPercent}%
+                      </div>
+                  </div>`;
+              }).join('');
+
+              function renderToday() {
+                const container = document.getElementById('todayTimeline');
+                const dayData = userTimetable[todayName] || [];
+                
+                if (dayData.length === 0) {
+                  container.innerHTML = `<div style="text-align:center; padding:2rem; opacity:0.5;"><p>No lectures scheduled for ${todayName}.</p></div>`;
+                  return;
+                }
+                const { current, next } = getLectureStatuses(dayData);
+                container.innerHTML = dayData.map(lec => {
+                  let subject = lec.subject; let teacher = lec.teacher; let room = lec.room;
+                  if (lec.isBatchSplit) {
+                    const myBatch = lec.batches.find(b => b.name === user.batch);
+                    subject = `[${myBatch.name}] ${myBatch.subject}`; teacher = myBatch.teacher; room = myBatch.room;
+                  }
+                  return `
+                    <div class="timeline-item ${lec === current ? 'is-current' : (lec === next ? 'is-next' : '')}">
+                      <div class="timeline-time">${lec.time}</div>
+                      <div class="timeline-details">
+                        <h3>${subject} ${lec === current ? '<span class="badge live">Live</span>' : ''}</h3>
+                        <p>${teacher} • ${room}</p>
+                      </div>
+                    </div>`;
+                }).join('');
+              }
+
+              function renderWeekly() {
+                const container = document.getElementById('weeklyContainer');
+                container.innerHTML = '';
+                ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'].forEach(day => {
+                  const sessions = userTimetable[day] || [];
+                  if(sessions.length === 0) return; 
+
+                  let html = `<div class="day-section"><h3 style="color:var(--accent-1); border:none; margin-top: 1.5rem;">${day}</h3>`;
+                  sessions.forEach(s => {
+                    if (s.isBatchSplit) {
+                      const subjectsHtml = s.batches.map(b => `<div style="margin-bottom: 6px; ${b.name === user.batch ? 'color:var(--accent-1); font-weight:600;' : 'opacity:0.6;'}"><b>${b.name}:</b> ${b.subject} <small>(${b.teacher})</small></div>`).join('');
+                      const roomsHtml = s.batches.map(b => `<div style="margin-bottom: 6px; ${b.name === user.batch ? 'color:var(--accent-1);' : 'opacity:0.6;'}">${b.room}</div>`).join('');
+                      html += `<div class="session" style="display: grid; grid-template-columns: 100px 1fr 100px; align-items: start; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 0;"><span style="font-weight:600; color:var(--accent-1);">${s.time}</span><div>${subjectsHtml}</div><div style="text-align:right; font-size: 0.8rem;">${roomsHtml}</div></div>`;
+                    } else {
+                      html += `<div class="session" style="display: grid; grid-template-columns: 100px 1fr 100px; align-items: center; gap: 15px; border-bottom: 1px solid rgba(255,255,255,0.05); padding: 12px 0;"><span style="font-weight:600; color:var(--accent-1);">${s.time}</span><span>${s.subject} <small style="opacity:0.7;">(${s.teacher})</small></span><span style="text-align:right; opacity: 0.8; font-size: 0.8rem;">${s.room}</span></div></div>`;
+                    }
+                  });
+                  html += `</div>`;
+                  container.innerHTML += html;
+                });
+              }
+
+              // UPGRADED RESULTS RENDERER
+              function renderResults() {
+                const grid = document.getElementById('resultsGrid');
+                if(user.results.length === 0) {
+                     grid.innerHTML = `<div style="text-align:center; opacity: 0.5; padding: 2rem;">No academic data published yet.</div>`;
+                     return;
+                }
+                
+                grid.innerHTML = user.results.map(res => {
+                  const displayCat1 = res.cat1 ? res.cat1 : "-";
+                  const displayMid  = res.mid ? res.mid : "-";
+                  const displayCat2 = res.cat2 ? res.cat2 : "-";
+                  
+                  const total = (Number(res.cat1 || 0) / 2) + (Number(res.cat2 || 0) / 2) + Number(res.mid || 0);
+                  const displayTotal = total > 0 ? total.toFixed(1) : "-";
+
+                  return `
+                  <div class="result-row" style="flex-direction: column; align-items: stretch; gap: 0.8rem; padding: 1.2rem;">
+                    <span style="font-size: 1.05rem; font-weight: 600; color: #fff;">${res.subject}</span>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; text-align: center; background: rgba(0,0,0,0.25); padding: 0.8rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03);">
+                        
+                        <div>
+                          <div style="font-size: 0.7rem; opacity: 0.6; text-transform: uppercase;">CAT 1</div>
+                          <div style="font-weight: 600; font-size: 1.1rem; color: ${displayCat1 === '-' ? 'rgba(255,255,255,0.3)' : '#fff'};">${displayCat1}</div>
+                        </div>
+                        
+                        <div>
+                          <div style="font-size: 0.7rem; opacity: 0.6; text-transform: uppercase;">MID</div>
+                          <div style="font-weight: 600; font-size: 1.1rem; color: ${displayMid === '-' ? 'rgba(255,255,255,0.3)' : '#fff'};">${displayMid}</div>
+                        </div>
+                        
+                        <div>
+                          <div style="font-size: 0.7rem; opacity: 0.6; text-transform: uppercase;">CAT 2</div>
+                          <div style="font-weight: 600; font-size: 1.1rem; color: ${displayCat2 === '-' ? 'rgba(255,255,255,0.3)' : '#fff'};">${displayCat2}</div>
+                        </div>
+                        
+                        <div>
+                          <div style="font-size: 0.7rem; color: var(--accent-1); text-transform: uppercase; font-weight: 700;">Total</div>
+                          <div style="font-weight: 700; font-size: 1.1rem; color: var(--accent-1);">${displayTotal}</div>
+                        </div>
+
+                    </div>
+                  </div>`;
+                }).join('');
+              }
+              
+              renderToday(); renderWeekly(); renderResults();
+              
+              const splash = document.getElementById('dashboardSplash');
+              splash.classList.add('slide-up-exit');
+              setTimeout(() => splash.style.display='none', 800);
+
+            } else { 
+                alert("Account not found or deleted from database.");
+                localStorage.removeItem('classsyncUser');
+                location.href = 'index.html'; 
+            }
+        }
+    }, 300); 
+  </script>
+</body>
+</html>

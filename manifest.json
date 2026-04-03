@@ -1,0 +1,21 @@
+{
+  "name": "ClassSync Smart Campus",
+  "short_name": "ClassSync",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#030614",
+  "theme_color": "#050914",
+  "description": "The unified ecosystem for modern education.",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,312 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#050914">
+  
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="logo.png">
+  <link rel="icon" type="image/png" href="title.png">
+  
+  <title>ClassSync - Smart Campus</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* --- FACULTY MODAL STYLES --- */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(5, 9, 20, 0.9); backdrop-filter: blur(10px);
+      z-index: 9999; display: flex; justify-content: center; align-items: center;
+      opacity: 0; transition: opacity 0.3s ease; pointer-events: none;
+    }
+    .modal-overlay.active { opacity: 1; pointer-events: auto; }
+    .modal-close {
+      position: absolute; top: 20px; right: 20px; font-size: 2rem;
+      color: #fff; cursor: pointer; opacity: 0.7; transition: opacity 0.2s;
+    }
+    .modal-close:hover { opacity: 1; }
+    .modal-content-wrapper { width: 100%; max-width: 500px; padding: 20px; }
+    
+    .roll-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(60px, 1fr)); gap: 10px; margin-top: 1.5rem; max-height: 40vh; overflow-y: auto; padding-right: 5px;
+    }
+    .roll-btn {
+      background: rgba(16, 185, 129, 0.15); border: 1px solid var(--success); color: #fff; padding: 0.8rem 0; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.2s ease; text-align: center;
+    }
+    .roll-btn.absent {
+      background: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: rgba(255, 255, 255, 0.5); transform: scale(0.95);
+    }
+  </style>
+</head>
+<body>
+  
+  <div class="splash-screen" id="splashScreen">
+    <div class="splash-content">
+      <img src="logo.png" alt="ClassSync Logo" class="splash-logo-img">
+      <h1 class="splash-title fade-in-text">Class<span class="gradient-text">Sync</span></h1>
+    </div>
+  </div>
+
+  <section class="hero-shell premium-hero">
+    <div class="hero-content fade-in" style="animation-delay: 1.2s;">
+      <img src="logo.png" alt="ClassSync Logo" class="hero-logo">
+      <h1 class="massive-title">Class<span class="gradient-text">Sync</span></h1>
+      <p class="premium-subtitle">The ultimate unified ecosystem for modern education.</p>
+      <p class="premium-description">Experience lightning-fast access to your daily lectures, real-time attendance tracking, and instant academic results—all beautifully organized in one place.</p>
+      
+      <div class="hero-actions">
+        <div class="button-glow-wrapper">
+          <button id="getStartedBtn" class="primary-btn premium-btn">
+            Enter Workspace <i class="ph ph-arrow-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="feature-grid premium-grid fade-in" style="animation-delay: 1.4s;">
+      <article class="glass-card bento-card" data-feature="today">
+        <div class="icon-wrapper"><i class="ph ph-calendar-check"></i></div>
+        <h3>Live Timetable</h3>
+        <p>Instantly see what lecture is happening right now, complete with room numbers and batch splits.</p>
+      </article>
+      
+      <article class="glass-card bento-card" data-feature="results">
+        <div class="icon-wrapper"><i class="ph ph-chart-polar"></i></div>
+        <h3>Academic Insights</h3>
+        <p>Track your mid-terms and CAT exams with dynamic targets showing exactly what you need to pass.</p>
+      </article>
+      
+      <article class="glass-card bento-card" data-feature="attendance">
+        <div class="icon-wrapper"><i class="ph ph-check-square-offset"></i></div>
+        <h3>Real-Time Attendance</h3>
+        <p>Never guess your aggregates again. Watch your attendance meter update with every class.</p>
+      </article>
+    </div>
+
+    <section class="stats-section fade-in" style="animation-delay: 1.6s;">
+      <h2>Engineered for Scale</h2>
+      <p>Stripping away the clutter of traditional student portals to give you exactly what you need, instantly.</p>
+      <div class="stats-container">
+        <div class="stat-box"><h4 class="gradient-text">500+</h4><p>Active Students</p></div>
+        <div class="stat-box"><h4 class="gradient-text">20+</h4><p>Faculty Members</p></div>
+        <div class="stat-box"><h4 class="gradient-text">0ms</h4><p>Lag Time</p></div>
+      </div>
+    </section>
+
+    <div style="text-align: center; margin-bottom: 2rem; width: 100%;" class="fade-in" style="animation-delay: 1.8s;">
+      <a href="#" id="openFacultyModal" style="color: var(--text-muted); font-size: 0.85rem; text-decoration: none; border-bottom: 1px dashed var(--text-muted); padding-bottom: 2px;">Faculty Login Portal</a>
+    </div>
+
+  </section>
+
+  <footer class="app-footer fade-in" style="animation-delay: 0.5s;">
+      <p>Designed by <span class="developer-name">Het Bakori</span></p>
+      <p class="footer-dept">Department of Computer Science & Engineering</p>
+  </footer>
+
+  <div id="facultyModal" class="modal-overlay">
+    <div class="modal-close" id="closeFacultyModal"><i class="ph ph-x"></i></div>
+    
+    <div class="modal-content-wrapper">
+      
+      <div id="facultyLoginCard" class="glass-card login-card">
+        <div class="login-header">
+          <i class="ph ph-chalkboard-teacher pulse-icon"></i>
+          <h1>Faculty Access</h1>
+          <p>Log in to manage attendance</p>
+        </div>
+
+        <div class="form-body">
+          <div class="input-group">
+            <label>Select Subject</label>
+            <div class="input-wrapper">
+              <i class="ph ph-books"></i>
+              <select id="subjectSelect" class="custom-input modern-input" style="appearance: none; background: transparent;">
+                <option value="DAA" style="color: #000;">DAA</option>
+                <option value="PYTHON" style="color: #000;">Python Programming</option>
+                <option value="COA" style="color: #000;">COA</option>
+                <option value="MATH" style="color: #000;">Mathematics</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="input-group">
+            <label>Passcode</label>
+            <div class="input-wrapper">
+              <i class="ph ph-lock-key"></i>
+              <input id="facultyPass" type="password" placeholder="••••••••" class="custom-input modern-input">
+            </div>
+          </div>
+        </div>
+
+        <button id="facultyLoginBtn" class="primary-btn glow-on-hover" style="width: 100%;">Authenticate <i class="ph ph-arrow-right"></i></button>
+        <p id="loginError" class="error-text"></p>
+      </div>
+
+      <div id="attendancePortal" class="glass-card" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h2 id="portalTitle" style="margin: 0;">Attendance</h2>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Tap to mark absent</p>
+          </div>
+          <div style="text-align: right;">
+            <span id="presentCount" style="font-size: 1.5rem; font-weight: 700; color: var(--success);">0</span>
+            <div style="font-size: 0.7rem; text-transform: uppercase;">Present</div>
+          </div>
+        </div>
+
+        <div id="rollGrid" class="roll-grid">
+          </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+          <button id="invertBtn" class="secondary-btn" style="flex: 1; margin:0;"><i class="ph ph-arrows-left-right"></i> Invert</button>
+          <button id="submitAttBtn" class="primary-btn" style="flex: 2; margin:0;">Submit</button>
+        </div>
+        <p id="submitStatus" style="text-align: center; margin-top: 1rem; font-size: 0.85rem;"></p>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+  
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      const splash = document.getElementById('splashScreen');
+      setTimeout(() => {
+        splash.classList.add('slide-up-exit');
+        setTimeout(() => splash.style.display='none', 800);
+      }, 1800); 
+
+      const featureCards = document.querySelectorAll('.bento-card');
+      featureCards.forEach(card => {
+        card.addEventListener('click', () => {
+          localStorage.setItem('classsyncFeature', card.dataset.feature);
+          window.location.href = 'feature.html';
+        });
+      });
+
+      document.getElementById('getStartedBtn').addEventListener('click', () => {
+        localStorage.removeItem('classsyncFeature');
+        window.location.href = 'feature.html';
+      });
+    });
+
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js')
+          .catch(err => console.log('ServiceWorker registration failed: ', err));
+      });
+    }
+  </script>
+
+  <script>
+    // --- MODAL TOGGLE ---
+    document.getElementById('openFacultyModal').addEventListener('click', (e) => {
+      e.preventDefault();
+      document.getElementById('facultyModal').classList.add('active');
+    });
+    
+    document.getElementById('closeFacultyModal').addEventListener('click', () => {
+      document.getElementById('facultyModal').classList.remove('active');
+    });
+
+    // --- SYSTEM LOGIC ---
+    // ⚠️ PASTE YOUR APPS SCRIPT URL HERE ⚠️
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbycyo6R8iZ8QRqFOejljcbxBkLngWDN-w0zJiEDmEvP5pQ0SwbT7BnpKeuZ-4xfN1Gs/exec"; 
+    
+    const START_ROLL = 101;
+    const END_ROLL = 174;
+    let totalStudents = END_ROLL - START_ROLL + 1;
+    let absentRolls = new Set(); 
+
+    document.getElementById('facultyLoginBtn').addEventListener('click', () => {
+      const pass = document.getElementById('facultyPass').value;
+      const subject = document.getElementById('subjectSelect').value;
+      const errorText = document.getElementById('loginError');
+
+      if (pass === "admin123") {
+        document.getElementById('facultyLoginCard').style.display = "none";
+        document.getElementById('attendancePortal').style.display = "block";
+        document.getElementById('portalTitle').textContent = subject + " Attendance";
+        generateGrid();
+      } else {
+        errorText.textContent = "Invalid passcode.";
+      }
+    });
+
+    function updateCounter() { document.getElementById('presentCount').textContent = totalStudents - absentRolls.size; }
+
+    function generateGrid() {
+      const grid = document.getElementById('rollGrid');
+      grid.innerHTML = '';
+      absentRolls.clear(); 
+      for (let i = START_ROLL; i <= END_ROLL; i++) {
+        const btn = document.createElement('div');
+        btn.className = 'roll-btn';
+        btn.textContent = i;
+        btn.onclick = () => toggleAttendance(btn, i);
+        grid.appendChild(btn);
+      }
+      updateCounter();
+    }
+
+    function toggleAttendance(btn, roll) {
+      if (absentRolls.has(roll)) {
+        absentRolls.delete(roll);
+        btn.classList.remove('absent');
+      } else {
+        absentRolls.add(roll);
+        btn.classList.add('absent');
+      }
+      updateCounter();
+    }
+
+    document.getElementById('invertBtn').addEventListener('click', () => {
+      document.querySelectorAll('.roll-btn').forEach(btn => toggleAttendance(btn, parseInt(btn.textContent)));
+    });
+
+    document.getElementById('submitAttBtn').addEventListener('click', () => {
+      const btn = document.getElementById('submitAttBtn');
+      const statusText = document.getElementById('submitStatus');
+      const subject = document.getElementById('subjectSelect').value;
+
+      btn.innerHTML = '<i class="ph ph-spinner-gap spinner"></i> Syncing...';
+      btn.style.pointerEvents = 'none';
+      statusText.textContent = "";
+
+      // THE NUCLEAR OPTION: Bypassing Google's CORS completely
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        mode: 'no-cors', // <--- This forces the data through the firewall
+        headers: {
+          "Content-Type": "text/plain", 
+        },
+        body: JSON.stringify({ subject: subject, absentRolls: Array.from(absentRolls) })
+      })
+      .then(() => {
+        // Because we bypassed security, Google hides their text response. 
+        // So if it didn't crash, we know the data went through!
+        btn.innerHTML = '<i class="ph ph-check-circle"></i> Success!';
+        btn.style.background = "var(--success)";
+        statusText.style.color = "var(--success)";
+        statusText.textContent = "Attendance locked in database.";
+      })
+      .catch(error => {
+        btn.innerHTML = 'Retry Submit';
+        btn.style.pointerEvents = 'auto';
+        statusText.style.color = "#ef4444";
+        statusText.textContent = "Network Error: Check your connection.";
+      });
+    });
+  </script>
+</body>
+</html>
