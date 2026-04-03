@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -44,6 +44,8 @@
     .roll-btn.absent {
       background: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: rgba(255, 255, 255, 0.5); transform: scale(0.95);
     }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
@@ -132,8 +134,6 @@
               <select id="subjectSelect" class="custom-input modern-input" style="appearance: none; background: transparent;">
                 <option value="DAA" style="color: #000;">DAA</option>
                 <option value="PYTHON" style="color: #000;">Python Programming</option>
-                <option value="COA" style="color: #000;">COA</option>
-                <option value="MATH" style="color: #000;">Mathematics</option>
               </select>
             </div>
           </div>
@@ -163,8 +163,7 @@
           </div>
         </div>
 
-        <div id="rollGrid" class="roll-grid">
-          </div>
+        <div id="rollGrid" class="roll-grid"></div>
 
         <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
           <button id="invertBtn" class="secondary-btn" style="flex: 1; margin:0;"><i class="ph ph-arrows-left-right"></i> Invert</button>
@@ -172,13 +171,13 @@
         </div>
         <p id="submitStatus" style="text-align: center; margin-top: 1rem; font-size: 0.85rem;"></p>
       </div>
-
     </div>
   </div>
 
   <script src="script.js"></script>
   
   <script>
+    // --- APP FLOW ---
     window.addEventListener('DOMContentLoaded', () => {
       const splash = document.getElementById('splashScreen');
       setTimeout(() => {
@@ -200,15 +199,6 @@
       });
     });
 
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-          .catch(err => console.log('ServiceWorker registration failed: ', err));
-      });
-    }
-  </script>
-
-  <script>
     // --- MODAL TOGGLE ---
     document.getElementById('openFacultyModal').addEventListener('click', (e) => {
       e.preventDefault();
@@ -219,8 +209,7 @@
       document.getElementById('facultyModal').classList.remove('active');
     });
 
-    // --- SYSTEM LOGIC ---
-    // ⚠️ PASTE YOUR APPS SCRIPT URL HERE ⚠️
+    // --- ATTENDANCE SYSTEM LOGIC ---
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyjukqjeLk6s0EzexTthmLOpOpGxqgus37zJiXA2V2YGZDK-6kyoKamCbJdMm8fHQew/exec"; 
     
     const START_ROLL = 101;
@@ -243,7 +232,9 @@
       }
     });
 
-    function updateCounter() { document.getElementById('presentCount').textContent = totalStudents - absentRolls.size; }
+    function updateCounter() { 
+      document.getElementById('presentCount').textContent = totalStudents - absentRolls.size; 
+    }
 
     function generateGrid() {
       const grid = document.getElementById('rollGrid');
@@ -253,25 +244,23 @@
         const btn = document.createElement('div');
         btn.className = 'roll-btn';
         btn.textContent = i;
-        btn.onclick = () => toggleAttendance(btn, i);
+        btn.onclick = () => {
+          if (absentRolls.has(i)) {
+            absentRolls.delete(i);
+            btn.classList.remove('absent');
+          } else {
+            absentRolls.add(i);
+            btn.classList.add('absent');
+          }
+          updateCounter();
+        };
         grid.appendChild(btn);
       }
       updateCounter();
     }
 
-    function toggleAttendance(btn, roll) {
-      if (absentRolls.has(roll)) {
-        absentRolls.delete(roll);
-        btn.classList.remove('absent');
-      } else {
-        absentRolls.add(roll);
-        btn.classList.add('absent');
-      }
-      updateCounter();
-    }
-
     document.getElementById('invertBtn').addEventListener('click', () => {
-      document.querySelectorAll('.roll-btn').forEach(btn => toggleAttendance(btn, parseInt(btn.textContent)));
+      document.querySelectorAll('.roll-btn').forEach(btn => btn.click());
     });
 
     document.getElementById('submitAttBtn').addEventListener('click', () => {
@@ -281,30 +270,32 @@
 
       btn.innerHTML = '<i class="ph ph-spinner-gap spinner"></i> Syncing...';
       btn.style.pointerEvents = 'none';
-      statusText.textContent = "";
 
-      // THE NUCLEAR OPTION: Bypassing Google's CORS completely
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
-        mode: 'no-cors', // <--- This forces the data through the firewall
-        headers: {
-          "Content-Type": "text/plain", 
-        },
-        body: JSON.stringify({ subject: subject, absentRolls: Array.from(absentRolls) })
+        mode: 'no-cors', 
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ 
+          subject: subject, 
+          absentRolls: Array.from(absentRolls) 
+        })
       })
       .then(() => {
-        // Because we bypassed security, Google hides their text response. 
-        // So if it didn't crash, we know the data went through!
         btn.innerHTML = '<i class="ph ph-check-circle"></i> Success!';
-        btn.style.background = "var(--success)";
-        statusText.style.color = "var(--success)";
-        statusText.textContent = "Attendance locked in database.";
+        btn.style.background = "#10b981";
+        statusText.style.color = "#10b981";
+        statusText.textContent = "Data pushed to " + subject + " sheet.";
+        setTimeout(() => {
+          btn.innerHTML = 'Submit';
+          btn.style.pointerEvents = 'auto';
+          btn.style.background = "";
+        }, 3000);
       })
-      .catch(error => {
+      .catch(() => {
         btn.innerHTML = 'Retry Submit';
         btn.style.pointerEvents = 'auto';
         statusText.style.color = "#ef4444";
-        statusText.textContent = "Network Error: Check your connection.";
+        statusText.textContent = "Connection Error!";
       });
     });
   </script>
