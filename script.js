@@ -1,15 +1,15 @@
 /**
- * CLASSSYNC - FULL SYSTEM LOGIC
- * Developer: Het Bakori | Brand: Graphic Paradise
+ * CLASSSYNC MASTER SCRIPT
+ * Brand: Graphic Paradise | Developer: Het Bakori
  */
 
 // --- 1. LIVE GOOGLE SHEETS DATABASE ---
-// Added dynamic timestamp (?t=) to bypass phone browser caching
+// Added dynamic timestamp (?t=) to bypass browser caching on mobile
 const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQRgBqCSSXL2_j8P0cfhoXVImQfQF1c0sXdaxrZDI9wAIHsC-jpy4U4dyfw_Yq-p7t7gDqTMwtDBeYh/pub?output=csv&t=" + new Date().getTime();
 
 let studentDatabase = [];
 
-// Dictionary: Maps your Sheet Column Prefixes to Full Names on the UI
+// Dictionary: Maps short Google Sheet column codes to full display names
 const subjectDictionary = {
   "MDM": "MDM",
   "DAA": "DAA",
@@ -26,7 +26,7 @@ function fetchStudentData() {
     skipEmptyLines: true,
     complete: function(results) {
       studentDatabase = results.data
-        .filter(row => row.Roll) // Skips empty rows
+        .filter(row => row.Roll) 
         .map(row => {
           const student = { 
             roll: row.Roll, 
@@ -41,16 +41,17 @@ function fetchStudentData() {
           let totalAttendedOverall = 0; 
           let totalConductedOverall = 0;
 
-          // Loop through every column header in the Sheet
           Object.keys(row).forEach(key => {
-            const cleanKey = key.trim().toUpperCase(); // Remove spaces, make uppercase
+            // Clean the key: remove spaces and make uppercase for matching
+            const cleanKey = key.trim().toUpperCase();
             
+            // Check if it's a subject column (contains an underscore like DAA_ATT)
             if (!['ROLL', 'NAME', 'BATCH', 'DEPT'].includes(cleanKey)) {
               const parts = cleanKey.split('_'); 
               
               if (parts.length >= 2) {
                 const shortCode = parts[0]; 
-                const type = parts[1]; 
+                const type = parts[1]; // e.g., ATT, TOT, MID, CAT1
                 const fullName = subjectDictionary[shortCode] || shortCode; 
 
                 if (!dynamicSubjects[shortCode]) {
@@ -59,7 +60,7 @@ function fetchStudentData() {
                 
                 const val = Number(row[key]) || 0;
 
-                // Map Sheet Columns to Data Object
+                // Map Sheet Columns to the Data Object
                 if (type === 'ATT') {
                     dynamicSubjects[shortCode].att = val;
                     totalAttendedOverall += val;
@@ -77,7 +78,7 @@ function fetchStudentData() {
             }
           });
 
-          // Final Aggregate Calculation
+          // Calculate Overall Attendance Percentage
           student.attendance = totalConductedOverall > 0 
             ? Math.round((totalAttendedOverall / totalConductedOverall) * 100) 
             : 0;
@@ -85,7 +86,7 @@ function fetchStudentData() {
           student.results = Object.values(dynamicSubjects);
           return student;
       });
-      console.log("✅ Graphic Paradise Database Synced!", studentDatabase);
+      console.log("✅ Database Synced Successfully!", studentDatabase);
     },
     error: function(err) { 
       console.error("❌ CSV Load Error:", err); 
@@ -93,7 +94,6 @@ function fetchStudentData() {
   });
 }
 
-// Initial Run
 fetchStudentData();
 
 // --- 2. MASTER DEPARTMENT TIMETABLE ---
@@ -198,7 +198,7 @@ function getLectureStatuses(daySchedule) {
   return { current, next };
 }
 
-// Export functions to Window scope
+// Export to Window for use in other HTML files
 window.studentDatabase = studentDatabase; 
 window.authenticateUser = authenticateUser; 
 window.campusTimetables = campusTimetables; 
